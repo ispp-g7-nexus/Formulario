@@ -1,0 +1,55 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8501"
+    environment:
+      - APP_BASE_URL=https://${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
+
+  nginx:
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      - DOMAIN=${DOMAIN:?set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    depends_on:
+      - nginx
+    environment:
+      - DOMAIN=${DOMAIN:?set DOMAIN in .env}
+      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:?set LETSENCRYPT_EMAIL in .env}
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: /bin/sh
+    command: >
+      -c "trap exit TERM;
+      while :; do
+        certbot certonly --webroot -w /var/www/certbot
+        --agree-tos --no-eff-email --non-interactive
+        --email \"$${LETSENCRYPT_EMAIL}\"
+        -d \"$${DOMAIN}\"
+        --keep-until-expiring;
+        sleep 12h;
+      done"
+
+volumes:
+  letsencrypt:
+  certbot-webroot:
