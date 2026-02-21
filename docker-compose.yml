@@ -42,6 +42,9 @@ services:
     command:
       - |
         trap exit TERM
+        if [ ! -f "/etc/letsencrypt/renewal/$${DOMAIN}.conf" ] && [ -d "/etc/letsencrypt/live/$${DOMAIN}" ]; then
+          rm -rf "/etc/letsencrypt/live/$${DOMAIN}" "/etc/letsencrypt/archive/$${DOMAIN}"
+        fi
         while :; do
           certbot certonly --webroot -w /var/www/certbot \
             --agree-tos --no-eff-email --non-interactive \

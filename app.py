@@ -121,6 +121,29 @@ def write_sheet(conn, df: pd.DataFrame) -> None:
         conn.update(data=clean_df)
 
 
+def format_gsheets_error(exc: Exception) -> str:
+    raw = f"{type(exc).__name__}: {exc}"
+    upper = raw.upper()
+
+    if "SERVICE_DISABLED" in upper or "HAS NOT BEEN USED IN PROJECT" in upper:
+        return (
+            "Google Sheets API está deshabilitada en tu proyecto de Google Cloud. "
+            "Actívala en https://console.cloud.google.com/apis/library/sheets.googleapis.com "
+            "y espera 1-5 minutos."
+        )
+    if "PERMISSION_DENIED" in upper or "403" in upper:
+        return (
+            "Permiso denegado al abrir el spreadsheet. Verifica que la service account "
+            "tiene acceso de Editor al Google Sheet."
+        )
+    if "WORKSHEETNOTFOUND" in upper:
+        return (
+            "No existe la pestaña configurada en `worksheet` dentro del Google Sheet. "
+            "Crea la pestaña o corrige el nombre."
+        )
+    return raw
+
+
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -337,7 +360,6 @@ def update_or_append_person_b_row(df: pd.DataFrame, match_id: str, values: dict[
 
 def main() -> None:
     st.title("Formulario Nexus")
-    st.caption("Dataset de matching para modelo de recomendación Two-Tower")
     with st.container(border=True):
         st.subheader("Consentimiento informado y privacidad")
         st.markdown(
@@ -373,7 +395,7 @@ def main() -> None:
             conn = get_connection()
             df = read_sheet(conn)
         except Exception as exc:
-            st.error(f"No se pudo abrir Google Sheets: {exc}")
+            st.error(f"No se pudo abrir Google Sheets: {format_gsheets_error(exc)}")
             st.stop()
 
         if is_match_completed(df, match_id):
@@ -381,8 +403,6 @@ def main() -> None:
             st.write("Si quieres hacerlo de nuevo, inicia un nuevo test aquí:")
             st.link_button("Ir al inicio (/)", build_root_link())
             st.stop()
-    else:
-        st.info("Flujo Iniciador (Persona A). Completa el formulario para generar el enlace de invitación.")
 
     values, target = collect_form_values()
     if not values:
@@ -393,7 +413,7 @@ def main() -> None:
             conn = get_connection()
             df = read_sheet(conn)
         except Exception as exc:
-            st.error(f"No se pudo abrir Google Sheets: {exc}")
+            st.error(f"No se pudo abrir Google Sheets: {format_gsheets_error(exc)}")
             st.stop()
 
     try:
