@@ -103,6 +103,13 @@ def inject_mobile_styles() -> None:
     st.markdown(
         """
         <style>
+        /* Preguntas del formulario en desktop/tablet */
+        div[data-testid="stWidgetLabel"] p {
+          font-size: 1.08rem !important;
+          font-weight: 600 !important;
+          line-height: 1.45 !important;
+        }
+
         @media (max-width: 768px) {
           h1 {
             font-size: 2rem !important;
@@ -118,15 +125,13 @@ def inject_mobile_styles() -> None:
             font-size: 1.08rem !important;
             line-height: 1.55 !important;
           }
-          div[role="radiogroup"] label p,
-          div[data-testid="stSelectbox"] label p,
-          div[data-testid="stSlider"] label p,
-          div[data-testid="stTextInput"] label p {
-            font-size: 1.08rem !important;
+          div[data-testid="stWidgetLabel"] p {
+            font-size: 1.18rem !important;
+            font-weight: 600 !important;
+            line-height: 1.5 !important;
           }
-          div[data-testid="stRadio"] label p,
-          div[data-testid="stCheckbox"] label p {
-            font-size: 1.05rem !important;
+          div[role="radiogroup"] label p {
+            font-size: 1.1rem !important;
           }
           button p {
             font-size: 1.05rem !important;
