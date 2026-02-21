@@ -49,6 +49,94 @@ ALL_COLUMNS = (
     + ["target_nota_B", "timestamp"]
 )
 
+CATEGORICAL_OPTIONS: dict[str, list[str]] = {
+    "sexo": ["Masculino", "Femenino", "Otro"],
+    "filtro_mixto": ["Sí", "No", "Me da exactamente igual"],
+    "horario": ["Madrugador", "Nocturno"],
+    "lugar_estudio": [
+        "En mi habitación en silencio total",
+        "En la sala de estudio de la residencia",
+        "En bibliotecas públicas o facultad",
+        "Con música o ruido ambiente",
+    ],
+    "fines_semana": [
+        "Sí, casi siempre",
+        "A veces",
+        "No, suelo volver a mi casa familiar",
+    ],
+    "actividades_extra": [
+        "Muy importante, no paro en casa",
+        "Intermedio",
+        "Soy muy casero, disfruto mi tiempo en la habitación",
+    ],
+    "ocio_interno": [
+        "Torneos de E-sports",
+        "Cenas temáticas",
+        "Maratón de series-películas",
+        "Tardes de juegos de mesa",
+        "Otro",
+    ],
+    "tabaco_vapeo": [
+        "No, y me molesta que lo hagan en la habitación",
+        "No, pero me da igual si el otro lo hace",
+        "Sí, fumo o vapeo",
+    ],
+    "visitas": [
+        "Prefiero que sea un lugar privado solo para nosotros",
+        "Está bien de vez en cuando, avisando antes",
+        "Me encanta que haya gente, mi cuarto está siempre abierto",
+    ],
+    "compartir_gastos": [
+        "Prefiero que cada uno tenga lo suyo estrictamente",
+        "Me gusta comprar a medias y compartir",
+        "No me importa invitar o que me cojan cosas si hay confianza",
+    ],
+    "temperatura": [
+        "Muy friolero, prefiero ventana cerrada",
+        "Neutro",
+        "Muy caluroso, necesito ventilar y dormir fresco",
+    ],
+}
+
+
+def inject_mobile_styles() -> None:
+    st.markdown(
+        """
+        <style>
+        @media (max-width: 768px) {
+          h1 {
+            font-size: 2rem !important;
+            line-height: 1.25 !important;
+          }
+          h2 {
+            font-size: 1.5rem !important;
+          }
+          h3 {
+            font-size: 1.25rem !important;
+          }
+          p, li, label, div[data-testid="stMarkdownContainer"] p {
+            font-size: 1.08rem !important;
+            line-height: 1.55 !important;
+          }
+          div[role="radiogroup"] label p,
+          div[data-testid="stSelectbox"] label p,
+          div[data-testid="stSlider"] label p,
+          div[data-testid="stTextInput"] label p {
+            font-size: 1.08rem !important;
+          }
+          div[data-testid="stRadio"] label p,
+          div[data-testid="stCheckbox"] label p {
+            font-size: 1.05rem !important;
+          }
+          button p {
+            font-size: 1.05rem !important;
+          }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 def normalize_query_value(value: str | list[str] | None) -> str | None:
     if value is None:
@@ -172,29 +260,33 @@ def is_match_completed(df: pd.DataFrame, match_id: str) -> bool:
     return False
 
 
+def encode_choice(field: str, selected_label: str) -> int:
+    options = CATEGORICAL_OPTIONS[field]
+    return options.index(selected_label) + 1
+
+
 def collect_form_values() -> tuple[dict[str, object], int]:
     with st.form("nexus_form"):
-        sexo = st.selectbox(
+        sexo_label = st.selectbox(
             "1) Sexo",
-            ["Masculino", "Femenino", "Otro"],
+            CATEGORICAL_OPTIONS["sexo"],
             key="sexo",
         )
-        filtro_mixto = st.radio(
+        filtro_mixto_label = st.radio(
             "2) ¿Estarías dispuesto/a a compartir habitación con alguien de distinto sexo?",
-            ["Sí", "No", "Me da exactamente igual"],
+            CATEGORICAL_OPTIONS["filtro_mixto"],
             key="filtro_mixto",
         )
         edad = st.slider("3) Edad", min_value=17, max_value=35, value=22, key="edad")
 
-        horario = st.radio("4) Horario: Eres más...", ["Madrugador", "Nocturno"], key="horario")
-        lugar_estudio = st.selectbox(
+        horario_label = st.radio(
+            "4) Horario: Eres más...",
+            CATEGORICAL_OPTIONS["horario"],
+            key="horario",
+        )
+        lugar_estudio_label = st.selectbox(
             "5) ¿Dónde prefieres estudiar habitualmente?",
-            [
-                "En mi habitación en silencio total",
-                "En la sala de estudio de la residencia",
-                "En bibliotecas públicas o facultad",
-                "Con música o ruido ambiente",
-            ],
+            CATEGORICAL_OPTIONS["lugar_estudio"],
             key="lugar_estudio",
         )
         socializacion = st.slider(
@@ -204,37 +296,23 @@ def collect_form_values() -> tuple[dict[str, object], int]:
             value=5,
             key="socializacion",
         )
-        fines_semana = st.radio(
+        fines_semana_label = st.radio(
             "7) ¿Sueles quedarte los fines de semana?",
-            [
-                "Sí, casi siempre",
-                "A veces",
-                "No, suelo volver a mi casa familiar",
-            ],
+            CATEGORICAL_OPTIONS["fines_semana"],
             key="fines_semana",
         )
-        actividades_extra = st.radio(
+        actividades_extra_label = st.radio(
             "8) ¿Cómo de importante es para ti hacer planes fuera de la residencia?",
-            [
-                "Muy importante, no paro en casa",
-                "Intermedio",
-                "Soy muy casero, disfruto mi tiempo en la habitación",
-            ],
+            CATEGORICAL_OPTIONS["actividades_extra"],
             key="actividades_extra",
         )
-        ocio_interno = st.selectbox(
+        ocio_interno_label = st.selectbox(
             "9) ¿Qué tipo de actividades te gustaría hacer en la residencia?",
-            [
-                "Torneos de E-sports",
-                "Cenas temáticas",
-                "Maratón de series-películas",
-                "Tardes de juegos de mesa",
-                "Otro",
-            ],
+            CATEGORICAL_OPTIONS["ocio_interno"],
             key="ocio_interno",
         )
         ocio_interno_otro = ""
-        if ocio_interno == "Otro":
+        if ocio_interno_label == "Otro":
             ocio_interno_otro = st.text_input(
                 "9.b) Especifica otra actividad",
                 max_chars=120,
@@ -255,40 +333,24 @@ def collect_form_values() -> tuple[dict[str, object], int]:
             value=5,
             key="ruido_tolerancia",
         )
-        tabaco_vapeo = st.radio(
+        tabaco_vapeo_label = st.radio(
             "12) ¿Fumas o vapeas?",
-            [
-                "No, y me molesta que lo hagan en la habitación",
-                "No, pero me da igual si el otro lo hace",
-                "Sí, fumo o vapeo",
-            ],
+            CATEGORICAL_OPTIONS["tabaco_vapeo"],
             key="tabaco_vapeo",
         )
-        visitas = st.radio(
+        visitas_label = st.radio(
             "13) ¿Cómo te sientes respecto a traer amigos o a tu pareja a la habitación?",
-            [
-                "Prefiero que sea un lugar privado solo para nosotros",
-                "Está bien de vez en cuando, avisando antes",
-                "Me encanta que haya gente, mi cuarto está siempre abierto",
-            ],
+            CATEGORICAL_OPTIONS["visitas"],
             key="visitas",
         )
-        compartir_gastos = st.radio(
+        compartir_gastos_label = st.radio(
             "14) A la hora de comprar cosas básicas (papel higiénico, jabón...)...",
-            [
-                "Prefiero que cada uno tenga lo suyo estrictamente",
-                "Me gusta comprar a medias y compartir",
-                "No me importa invitar o que me cojan cosas si hay confianza",
-            ],
+            CATEGORICAL_OPTIONS["compartir_gastos"],
             key="compartir_gastos",
         )
-        temperatura = st.radio(
+        temperatura_label = st.radio(
             "15) ¿Eres más bien friolero o caluroso?",
-            [
-                "Muy friolero, prefiero ventana cerrada",
-                "Neutro",
-                "Muy caluroso, necesito ventilar y dormir fresco",
-            ],
+            CATEGORICAL_OPTIONS["temperatura"],
             key="temperatura",
         )
         target_nota = st.slider(
@@ -302,22 +364,22 @@ def collect_form_values() -> tuple[dict[str, object], int]:
         submitted = st.form_submit_button("Enviar")
 
     values = {
-        "sexo": sexo,
-        "filtro_mixto": filtro_mixto,
+        "sexo": encode_choice("sexo", sexo_label),
+        "filtro_mixto": encode_choice("filtro_mixto", filtro_mixto_label),
         "edad": int(edad),
-        "horario": horario,
-        "lugar_estudio": lugar_estudio,
+        "horario": encode_choice("horario", horario_label),
+        "lugar_estudio": encode_choice("lugar_estudio", lugar_estudio_label),
         "socializacion": int(socializacion),
-        "fines_semana": fines_semana,
-        "actividades_extra": actividades_extra,
-        "ocio_interno": ocio_interno,
+        "fines_semana": encode_choice("fines_semana", fines_semana_label),
+        "actividades_extra": encode_choice("actividades_extra", actividades_extra_label),
+        "ocio_interno": encode_choice("ocio_interno", ocio_interno_label),
         "ocio_interno_otro": ocio_interno_otro,
         "orden_limpieza": int(orden_limpieza),
         "ruido_tolerancia": int(ruido_tolerancia),
-        "tabaco_vapeo": tabaco_vapeo,
-        "visitas": visitas,
-        "compartir_gastos": compartir_gastos,
-        "temperatura": temperatura,
+        "tabaco_vapeo": encode_choice("tabaco_vapeo", tabaco_vapeo_label),
+        "visitas": encode_choice("visitas", visitas_label),
+        "compartir_gastos": encode_choice("compartir_gastos", compartir_gastos_label),
+        "temperatura": encode_choice("temperatura", temperatura_label),
     }
     return values if submitted else {}, int(target_nota)
 
@@ -359,6 +421,7 @@ def update_or_append_person_b_row(df: pd.DataFrame, match_id: str, values: dict[
 
 
 def main() -> None:
+    inject_mobile_styles()
     st.title("Formulario Nexus")
     with st.container(border=True):
         st.subheader("Consentimiento informado y privacidad")
